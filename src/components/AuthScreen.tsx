@@ -58,8 +58,8 @@ export function AuthScreen({ inviteNotice }: { inviteNotice?: boolean }) {
   return (
     <div className="auth-wrap">
       <form className="auth card" onSubmit={submit} method="post" action="#" autoComplete="on">
-        <div className="auth-brand">🧭 여행OK</div>
-        <p className="muted center">일정 · 시간 · 비용 · 동선을 함께 만드는 여행 플래너</p>
+        <div className="auth-brand">🧭 여행OK!</div>
+        <p className="muted center">가족이 함께 만드는 여행플래너</p>
         {inviteNotice && <p className="hint center">여행에 초대받으셨네요! 로그인하면 초대가 이어집니다.</p>}
         <div className="tabs">
           <button type="button" className={mode === 'login' ? 'on' : ''} onClick={() => setMode('login')}>로그인</button>

@@ -38,7 +38,7 @@ export function ShareModal({ trip, meId, onClose, onLeft }: Props) {
     const url = inviteUrl(token)
     try {
       if (navigator.share && /Mobi/i.test(navigator.userAgent)) {
-        await navigator.share({ title: `여행OK · ${trip.title}`, text: `'${trip.title}' 여행 일정을 함께 만들어요!`, url })
+        await navigator.share({ title: `여행OK! · ${trip.title}`, text: `'${trip.title}' 여행 일정을 함께 만들어요!`, url })
       } else {
         await navigator.clipboard.writeText(url)
       }

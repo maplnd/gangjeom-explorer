@@ -94,7 +94,7 @@ export function TripList({ trips, onOpen, onNew, onSample, onImport }: Props) {
       {!trips.length && (
         <div className="welcome card">
           <h2>✈️ 첫 여행을 만들어 보세요</h2>
-          <p>날짜별 <b>일정</b>과 <b>시간</b>, <b>비용·정산</b>, 지도 위 <b>동선</b>, <b>준비물</b>과 <b>여행 기록</b>까지. 친구를 초대해 <b>함께</b> 만들 수 있어요.</p>
+          <p>날짜별 <b>일정</b>과 <b>시간</b>, <b>비용·정산</b>, 지도 위 <b>동선</b>, <b>준비물</b>과 <b>여행 기록</b>까지. 가족을 초대해 <b>함께</b> 만들 수 있어요.</p>
           <div className="head-actions">
             <button className="btn primary" onClick={onNew}>+ 새 여행 만들기</button>
             <button className="btn" onClick={onSample}>제주 샘플 여행 추가</button>

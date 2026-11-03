@@ -29,7 +29,7 @@ export function AdminPanel({ meId, onBack, onCountChange }: { meId: string; onBa
     <div className="admin">
       <div className="trip-head">
         <button className="btn ghost sm" onClick={onBack}>← 목록</button>
-        <div className="trip-title"><h1>회원 관리</h1><div className="muted">가입 신청을 승인한 사람만 여행OK를 이용할 수 있습니다.</div></div>
+        <div className="trip-title"><h1>회원 관리</h1><div className="muted">가입 신청을 승인한 사람만 여행OK!를 이용할 수 있습니다.</div></div>
         <button className="btn ghost sm" onClick={load}>새로고침</button>
       </div>
       <div className="tabs">
