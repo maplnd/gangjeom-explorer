@@ -285,3 +285,15 @@ html, body { overflow-x: clip; max-width: 100%; }
   .trip-head .head-actions { margin-left: auto; }
   .trip-title { order: 3; flex-basis: 100%; min-width: 0; }
 }
+
+/* ---------- 날씨 바 ---------- */
+.weather-bar { margin: 2px 0 10px; display: grid; gap: 4px; }
+.weather-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.wday { flex: 0 0 auto; min-width: 104px; display: grid; justify-items: center; gap: 1px; padding: 8px 10px; background: var(--card);
+  border: 1px solid var(--line); border-top: 3px solid; border-radius: 10px; cursor: pointer; font-size: .8rem; }
+.wday.on { box-shadow: 0 0 0 2px var(--primary-2); }
+.wday.ref { opacity: .7; border-style: dashed; border-top-style: solid; }
+.wday .wd { color: var(--muted); font-size: .74rem; white-space: nowrap; }
+.wday .wi { font-size: 1.5rem; line-height: 1.2; }
+.wday .wt { white-space: nowrap; }
+.wday .wr { color: var(--muted); font-size: .74rem; white-space: nowrap; }

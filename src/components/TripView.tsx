@@ -7,7 +7,8 @@ import {
 } from '../utils'
 import { Checklist } from './Checklist'
 import { CostView } from './CostView'
-import { useWeather, weatherLabel } from '../weather'
+import { geocode, useWeather } from '../weather'
+import { WeatherBar } from './WeatherBar'
 import { Journal } from './Journal'
 import { MapView, type MapPoint, type MapSegment } from './MapView'
 import { StopForm } from './StopForm'
@@ -134,13 +135,15 @@ export function TripView({ trip, meId, members, online, onShare, google, onChang
     return { date, start: last ? fromMin(Math.min(toMin(last.end) + 30, 1380)) : '09:00' }
   }
 
+  const [destLoc, setDestLoc] = useState<{ lat: number; lng: number }>()
+  useEffect(() => { geocode(trip.destination ?? '').then(setDestLoc) }, [trip.destination])
   const weatherLocs = useMemo(() => {
-    const fallback = trip.stops.find((s) => s.place)?.place
+    const fallback = trip.stops.find((s) => s.place)?.place ?? destLoc
     return Object.fromEntries(allDates.map((d) => {
       const p = (byDay[d] ?? []).find((s) => s.place)?.place ?? fallback
       return [d, p ? { lat: p.lat, lng: p.lng } : undefined]
     }))
-  }, [allDates, byDay, trip.stops])
+  }, [allDates, byDay, trip.stops, destLoc])
   const weather = useWeather(weatherLocs)
 
   const totals = tripTotals(trip)
@@ -212,6 +215,8 @@ export function TripView({ trip, meId, members, online, onShare, google, onChang
             {canEdit && <button className="btn primary sm" onClick={() => setEditing('new')}>+ 일정 추가</button>}
           </div>
 
+          <WeatherBar dates={allDates} days={days} weather={weather} selected={day} color={dayColor} onPick={setDay} />
+
           <div className="plan">
             <div className="plan-list">
               {visibleDates.map((d) => {
@@ -224,15 +229,6 @@ export function TripView({ trip, meId, members, online, onShare, google, onChang
                           <span className="day-dot" style={{ background: dayColor(d) }} />
                           {days.includes(d) ? `Day ${days.indexOf(d) + 1}` : '기간 외'} · {fmtDate(d)}
                         </h3>
-                        {weather[d] && (() => {
-                          const w = weather[d]
-                          const [icon, label] = weatherLabel(w.code)
-                          return (
-                            <div className="weather" title={`${label} · 강수확률 ${w.rain ?? '-'}%`}>
-                              {icon} {label} {Math.round(w.min)}° / {Math.round(w.max)}°{w.rain != null && w.rain >= 30 && <> · ☔ {w.rain}%</>}
-                            </div>
-                          )
-                        })()}
                         <div className="muted small">
                           일정 {sum.count}개 · 이동 {fmtDistance(sum.dist)} / 약 {fmtDuration(sum.dur)} · 비용 {fmtMoney(sum.cost, trip.currency)}
                         </div>
