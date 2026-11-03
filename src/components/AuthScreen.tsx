@@ -7,6 +7,7 @@ export function AuthScreen({ inviteNotice }: { inviteNotice?: boolean }) {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
+  const [show, setShow] = useState(false)
   const [msg, setMsg] = useState<{ type: 'error' | 'info'; text: string } | null>(null)
 
   const submit = async (e: React.FormEvent) => {
@@ -15,12 +16,12 @@ export function AuthScreen({ inviteNotice }: { inviteNotice?: boolean }) {
     setMsg(null)
     try {
       if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
         if (error) throw error
       } else {
         if (password.length < 6) throw new Error('비밀번호는 6자 이상이어야 합니다.')
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email: email.trim().toLowerCase(),
           password,
           options: { data: { display_name: name.trim() } },
         })
@@ -34,7 +35,7 @@ export function AuthScreen({ inviteNotice }: { inviteNotice?: boolean }) {
       const m = (err as Error).message
       setMsg({
         type: 'error',
-        text: /Invalid login/i.test(m) ? '이메일 또는 비밀번호가 올바르지 않습니다.'
+        text: /Invalid login/i.test(m) ? '이메일 또는 비밀번호가 올바르지 않습니다. 대·소문자와 자동완성된 값을 ‘보기’로 확인해 보세요.'
           : /already registered/i.test(m) ? '이미 가입된 이메일입니다. 로그인해 주세요.'
           : /Email not confirmed/i.test(m) ? '이메일 인증이 아직 완료되지 않았습니다.'
           : m,
@@ -62,16 +63,21 @@ export function AuthScreen({ inviteNotice }: { inviteNotice?: boolean }) {
         )}
         <label className="field">
           <span>이메일</span>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+          <input type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email"
+            autoCapitalize="none" autoCorrect="off" spellCheck={false} />
         </label>
         <label className="field">
           <span>비밀번호</span>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+          <div className="pw-row">
+            <input type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'} autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+            <button type="button" className="btn ghost sm" onClick={() => setShow((v) => !v)}>{show ? '숨기기' : '보기'}</button>
+          </div>
         </label>
         {msg && <p className={`hint ${msg.type === 'error' ? 'warn' : ''}`}>{msg.text}</p>}
         <button className="btn primary block" disabled={busy}>{busy ? '처리 중…' : mode === 'login' ? '로그인' : '가입 신청하기'}</button>
         {mode === 'signup' && <p className="muted small center">가입 후 관리자가 승인하면 이용할 수 있습니다.</p>}
+        {mode === 'login' && <p className="muted small center">비밀번호를 잊으셨다면 관리자에게 임시 비밀번호를 요청하세요.</p>}
       </form>
     </div>
   )

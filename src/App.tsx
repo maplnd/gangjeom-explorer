@@ -151,6 +151,14 @@ function Main({ profile, onLogout, onProfileChange }: { profile: Profile; onLogo
                   if (n?.trim()) { await api.updateMyName(n).catch((e) => alert(e.message)); onProfileChange() }
                   setMenu(false)
                 }}>이름 변경</button>
+                <button onClick={async () => {
+                  const pw = prompt('새 비밀번호 (6자 이상)')
+                  if (!pw) return
+                  if (pw.length < 6) return alert('비밀번호는 6자 이상이어야 합니다.')
+                  if (prompt('새 비밀번호를 한 번 더 입력하세요') !== pw) return alert('두 비밀번호가 다릅니다.')
+                  try { await api.changeMyPassword(pw); alert('비밀번호를 변경했습니다.') } catch (e) { alert((e as Error).message) }
+                  setMenu(false)
+                }}>비밀번호 변경</button>
                 <button onClick={onLogout}>로그아웃</button>
               </div>
             )}

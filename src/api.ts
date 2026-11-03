@@ -169,3 +169,11 @@ export async function setUserStatus(userId: string, status: Profile['status']) {
 export async function updateMyName(name: string) {
   check(await supabase.rpc('update_my_name', { p_name: name }))
 }
+
+export async function adminSetPassword(userId: string, password: string) {
+  check(await supabase.rpc('admin_set_password', { p_user: userId, p_password: password }))
+}
+export async function changeMyPassword(password: string) {
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) throw new Error(error.message)
+}

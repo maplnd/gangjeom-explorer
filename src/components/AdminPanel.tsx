@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchAllProfiles, setUserStatus } from '../api'
+import { adminSetPassword, fetchAllProfiles, setUserStatus } from '../api'
 import type { Profile } from '../types'
 
 const LABEL = { pending: '승인 대기', approved: '승인됨', rejected: '거절됨' }
@@ -52,6 +52,12 @@ export function AdminPanel({ meId, onBack, onCountChange }: { meId: string; onBa
                 <div className="head-actions">
                   {p.status !== 'approved' && <button className="btn primary sm" onClick={() => change(p, 'approved')}>승인</button>}
                   {p.status === 'pending' && <button className="btn ghost sm danger" onClick={() => change(p, 'rejected')}>거절</button>}
+                  <button className="btn ghost sm" onClick={async () => {
+                    const pw = prompt(`${p.display_name}님의 임시 비밀번호 (6자 이상)`)
+                    if (!pw) return
+                    try { await adminSetPassword(p.id, pw); alert('임시 비밀번호를 설정했습니다. 본인에게 전달하고, 로그인 후 메뉴에서 변경하도록 안내하세요.') }
+                    catch (e) { alert((e as Error).message) }
+                  }}>비밀번호 초기화</button>
                   {p.status === 'approved' && <button className="btn ghost sm danger" onClick={() => confirm(`${p.display_name}님의 이용 승인을 취소할까요?`) && change(p, 'rejected')}>승인 취소</button>}
                 </div>
               )}

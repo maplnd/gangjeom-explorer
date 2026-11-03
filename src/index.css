@@ -256,3 +256,5 @@ select.mini { padding: 4px 6px; font-size: .82rem; width: auto; }
 .tabs { overflow-x: auto; scrollbar-width: none; }
 .tabs button { white-space: nowrap; flex-shrink: 0; }
 @media (max-width: 600px) { .tabs button { padding: 10px 10px; } .sync-status { bottom: 8px; right: 8px; font-size: .72rem; opacity: .92; } }
+.pw-row { display: flex; gap: 6px; }
+.pw-row input { flex: 1; }
