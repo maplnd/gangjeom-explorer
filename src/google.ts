@@ -58,7 +58,7 @@ export function useGoogleMaps(key: string): GoogleStatus {
 export const isGoogleReady = () => status === 'ready'
 
 /** 하루 사용량 상한 (서버에서 집계: 지도 300회, 장소검색 100회, 경로 300회). 넘으면 무료 대체 수단 사용 */
-export async function consumeQuota(kind: 'map' | 'places' | 'routes'): Promise<boolean> {
+export async function consumeQuota(kind: 'map' | 'places' | 'routes' | 'photos'): Promise<boolean> {
   try {
     const { data, error } = await supabase.rpc('use_quota', { p_kind: kind })
     return !error && data === true
@@ -147,4 +147,48 @@ export function googleRoute(a: Place, b: Place, mode: TravelMode): Promise<Googl
   })()
   routeCache.set(key, p)
   return p
+}
+
+/* ---------- 장소 대표 사진 (식당 등) ---------- */
+
+export interface PlacePhotoResult { url: string | null; author?: string; authorUri?: string; placeId?: string }
+const photoCache = new Map<string, Promise<PlacePhotoResult | null>>()
+
+/** Google 장소의 첫 번째 사진. placeId가 없으면 이름+좌표로 장소를 찾아 placeId도 돌려줌 */
+export function placePhoto(place: Place, title: string): Promise<PlacePhotoResult | null> {
+  if (!isGoogleReady()) return Promise.resolve(null)
+  const key = place.placeId ?? `${place.lat.toFixed(5)},${place.lng.toFixed(5)}|${title}`
+  if (!photoCache.has(key)) {
+    photoCache.set(key, (async () => {
+      try {
+        const lib = (await google.maps.importLibrary('places')) as google.maps.PlacesLibrary
+        let id = place.placeId
+        if (!id) {
+          if (!(await consumeQuota('places'))) return null
+          const { places } = await lib.Place.searchByText({
+            textQuery: title || place.name,
+            fields: ['id'],
+            locationBias: { lat: place.lat, lng: place.lng },
+            maxResultCount: 1,
+            language: 'ko',
+          })
+          id = places[0]?.id
+          if (!id) return { url: null }
+        }
+        if (!(await consumeQuota('photos'))) return { url: null, placeId: id }
+        const p = new lib.Place({ id })
+        await p.fetchFields({ fields: ['photos'] })
+        const ph = p.photos?.[0]
+        if (!ph) return { url: null, placeId: id }
+        const a = ph.authorAttributions?.[0]
+        return { url: ph.getURI({ maxWidth: 640, maxHeight: 400 }), author: a?.displayName, authorUri: a?.uri ?? undefined, placeId: id }
+      } catch {
+        photoCache.delete(key)
+        return null
+      }
+    })())
+    // 찾은 placeId로도 같은 결과를 재사용 (저장 후 다시 요청하지 않도록)
+    photoCache.get(key)!.then((r) => { if (r?.placeId && !photoCache.has(r.placeId)) photoCache.set(r.placeId, Promise.resolve(r)) })
+  }
+  return photoCache.get(key)!
 }

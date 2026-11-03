@@ -315,6 +315,8 @@ export function TripView({ trip, meId, members, online, onShare, google, onChang
                       dragId={drag?.id}
                       dropBefore={drag && target?.date === d ? target.beforeId : false}
                       bindDrag={bind}
+                      showPhotos={google === 'ready'}
+                      onPlaceId={canEdit ? (st, placeId) => st.place && updateStop({ ...st, place: { ...st.place, placeId } }) : undefined}
                       onShiftNext={(next, start) => {
                         const len = toMin(next.end) - toMin(next.start)
                         const st = Math.min(Math.ceil(start / 5) * 5, 1439)

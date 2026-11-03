@@ -1,4 +1,5 @@
 import { CATEGORIES, MODES, type Leg, type Stop } from '../types'
+import { PlacePhoto } from './PlacePhoto'
 import { fmtDistance, fmtDuration, fmtMoney, googlePlaceUrl, toMin } from '../utils'
 
 interface Props {
@@ -18,6 +19,8 @@ interface Props {
   dragId?: string
   dropBefore?: string | null | false // false = 이 날이 대상 아님, null = 맨 끝
   bindDrag?: (id: string, title: string) => Record<string, unknown>
+  showPhotos?: boolean
+  onPlaceId?: (s: Stop, placeId: string) => void
 }
 
 const URL_RE = /(https?:\/\/[^\s]+)/g
@@ -27,7 +30,7 @@ function linkify(text: string) {
   )
 }
 
-export function Timeline({ stops, labels, color, legFor, currency, selectedId, onSelect, onEdit, onDelete, onToggleDone, onShiftNext, canEdit, date, dragId, dropBefore = false, bindDrag }: Props) {
+export function Timeline({ stops, labels, color, legFor, currency, selectedId, onSelect, onEdit, onDelete, onToggleDone, onShiftNext, canEdit, date, dragId, dropBefore = false, bindDrag, showPhotos, onPlaceId }: Props) {
   if (!stops.length) return <p className={`empty ${dropBefore !== false ? 'drop-here' : ''}`}>{dropBefore !== false ? '여기에 놓기' : '이 날은 아직 일정이 없어요.'}</p>
   return (
     <ol className="timeline">
@@ -58,6 +61,9 @@ export function Timeline({ stops, labels, color, legFor, currency, selectedId, o
                   <strong>{s.title}</strong>
                   {s.cost > 0 && <span className="cost">{fmtMoney(s.cost, currency)}</span>}
                 </div>
+                {showPhotos && s.category === 'food' && s.place && (
+                  <PlacePhoto place={s.place} title={s.title} onPlaceId={onPlaceId ? (id) => onPlaceId(s, id) : undefined} />
+                )}
                 {s.place ? (
                   <a className="place-link" href={googlePlaceUrl(s.place)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
                     📍 {s.place.name} <span className="ext">↗ 구글맵</span>
