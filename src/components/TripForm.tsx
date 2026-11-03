@@ -7,6 +7,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 export function TripForm({ trip, onSave, onClose }: { trip?: Trip; onSave: (t: Trip) => void; onClose: () => void }) {
   const [title, setTitle] = useState(trip?.title ?? '')
+  const [destination, setDestination] = useState(trip?.destination ?? '')
   const [startDate, setStart] = useState(trip?.startDate ?? today())
   const [endDate, setEnd] = useState(trip?.endDate ?? today())
   const [budget, setBudget] = useState(String(trip?.budget ?? ''))
@@ -17,8 +18,12 @@ export function TripForm({ trip, onSave, onClose }: { trip?: Trip; onSave: (t: T
     if (!valid) return
     onSave({
       id: trip?.id ?? uid(),
+      ...trip,
       stops: trip?.stops ?? [],
       expenses: trip?.expenses ?? [],
+      checklist: trip?.checklist ?? [],
+      notes: trip?.notes ?? [],
+      destination: destination.trim(),
       createdAt: trip?.createdAt ?? Date.now(),
       title: title.trim(),
       startDate,
@@ -42,6 +47,10 @@ export function TripForm({ trip, onSave, onClose }: { trip?: Trip; onSave: (t: T
       <label className="field">
         <span>여행 이름</span>
         <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예: 도쿄 3박 4일" />
+      </label>
+      <label className="field">
+        <span>여행지</span>
+        <input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="예: 일본 도쿄, 제주도" />
       </label>
       <div className="row2">
         <label className="field">

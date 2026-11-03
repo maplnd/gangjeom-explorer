@@ -13,6 +13,15 @@ export function sampleTrip(): Trip {
   return {
     id: uid(),
     title: '제주 2박 3일 (샘플)',
+    destination: '제주도',
+    checklist: [
+      { id: uid(), text: '신분증', category: '서류', done: false, sort: 1 },
+      { id: uid(), text: '렌터카 예약 확인 · 운전면허증', category: '서류', done: false, sort: 2 },
+      { id: uid(), text: '보조배터리', category: '전자기기', done: false, sort: 3 },
+      { id: uid(), text: '바람막이 (해안가 바람)', category: '의류', done: false, sort: 4 },
+      { id: uid(), text: '선크림', category: '생활·위생', done: false, sort: 5 },
+    ],
+    notes: [],
     startDate: d1,
     endDate: d3,
     budget: 800000,

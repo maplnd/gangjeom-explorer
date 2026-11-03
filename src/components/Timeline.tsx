@@ -13,10 +13,11 @@ interface Props {
   onDelete: (s: Stop) => void
   onToggleDone: (s: Stop) => void
   onShiftNext: (next: Stop, newStart: number) => void
+  canEdit: boolean
 }
 
-export function Timeline({ stops, labels, color, legFor, currency, selectedId, onSelect, onEdit, onDelete, onToggleDone, onShiftNext }: Props) {
-  if (!stops.length) return <p className="empty">이 날은 아직 일정이 없어요. ‘+ 일정 추가’를 눌러 보세요.</p>
+export function Timeline({ stops, labels, color, legFor, currency, selectedId, onSelect, onEdit, onDelete, onToggleDone, onShiftNext, canEdit }: Props) {
+  if (!stops.length) return <p className="empty">이 날은 아직 일정이 없어요.</p>
   return (
     <ol className="timeline">
       {stops.map((s, i) => {
@@ -52,13 +53,15 @@ export function Timeline({ stops, labels, color, legFor, currency, selectedId, o
                   <span className="muted small">위치 미지정 (지도·동선에서 제외)</span>
                 )}
                 {s.memo && <p className="memo">{s.memo}</p>}
-                <div className="stop-actions" onClick={(e) => e.stopPropagation()}>
-                  <label className="check">
-                    <input type="checkbox" checked={!!s.done} onChange={() => onToggleDone(s)} /> 다녀옴
-                  </label>
-                  <button className="link" onClick={() => onEdit(s)}>수정</button>
-                  <button className="link danger" onClick={() => confirm(`'${s.title}' 일정을 삭제할까요?`) && onDelete(s)}>삭제</button>
-                </div>
+                {canEdit ? (
+                  <div className="stop-actions" onClick={(e) => e.stopPropagation()}>
+                    <label className="check">
+                      <input type="checkbox" checked={!!s.done} onChange={() => onToggleDone(s)} /> 다녀옴
+                    </label>
+                    <button className="link" onClick={() => onEdit(s)}>수정</button>
+                    <button className="link danger" onClick={() => confirm(`'${s.title}' 일정을 삭제할까요?`) && onDelete(s)}>삭제</button>
+                  </div>
+                ) : s.done && <span className="muted small">✅ 다녀옴</span>}
               </div>
             </div>
             {next && (
@@ -72,7 +75,7 @@ export function Timeline({ stops, labels, color, legFor, currency, selectedId, o
                     {short ? (
                       <span className="warn-text">
                         ⚠️ 여유 {fmtDuration(Math.max(gap, 0))}뿐
-                        <button className="link" onClick={() => onShiftNext(next, toMin(s.end) + need)}>다음 일정 늦추기</button>
+                        {canEdit && <button className="link" onClick={() => onShiftNext(next, toMin(s.end) + need)}>다음 일정 늦추기</button>}
                       </span>
                     ) : (
                       gap - need >= 10 && <span className="muted">여유 {fmtDuration(gap - need)}</span>

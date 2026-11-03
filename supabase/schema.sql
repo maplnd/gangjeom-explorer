@@ -1,0 +1,5 @@
+-- 여행OK Supabase 스키마는 Supabase 마이그레이션으로 적용되어 있습니다:
+--   init_travel_log, harden_helpers, checklist_notes_settlement, trips_owner_select
+-- 테이블: profiles, trips, trip_members, stops, expenses, trip_invites, checklist_items, day_notes
+-- RPC:   invite_info, accept_invite, set_user_status, update_my_name
+-- 전체 SQL은 Supabase 대시보드 > Database > Migrations 에서 확인할 수 있습니다.

@@ -1,48 +1,38 @@
-# 🧭 여행 기록 (gangjeom-explorer)
+# 🧭 여행OK
 
-여행의 **일정 · 시간 · 비용 · 동선**을 한 화면에서 기록하고, **구글맵**과 연동해 경로를 확인하는 웹 앱입니다.
+**일정 · 시간 · 비용 · 동선**을 한 화면에서 관리하고, 친구와 **함께 만드는** 여행 플래너입니다. 구글맵과 연동됩니다.
 
 ## 주요 기능
 
 | 기능 | 내용 |
 | --- | --- |
-| 🗓️ 일정 | 여행 기간을 Day 1, Day 2…로 나누고, 일정마다 시작/종료 시간·분류·메모를 기록 |
-| ⏱️ 시간 | 일정별 소요시간, 다음 장소까지 이동시간, **이동시간이 부족하면 경고** + ‘다음 일정 늦추기’ 버튼 |
-| 💰 비용 | 일정별 비용 + 별도 지출(항공권 등), 분류별/일자별 합계, 예산 대비 사용률 |
-| 🗺️ 동선 | 지도에 번호 마커와 경로선 표시 (일자별 색상), 일자별 총 이동거리·이동시간 |
-| 🔗 구글맵 | 장소마다 ‘구글맵’ 링크, 하루 동선 전체를 **구글맵 길찾기**로 바로 열기 |
-| ✅ 기록 | ‘다녀옴’ 체크, 메모, JSON 내보내기/가져오기 |
+| 🔐 회원 · 승인 | 이메일 가입 → **관리자가 승인한 사람만** 이용 (상단 ‘회원관리’에서 승인/거절/취소) |
+| 👥 공유 · 공동편집 | 초대 링크(편집자/보기 전용, 14일 유효), 멤버 권한 변경·내보내기, **실시간 동기화**, 지금 보는 사람 표시 |
+| 🗓️ 일정 · 시간 | Day별 타임라인, 소요시간, 이동시간 부족 경고 + ‘다음 일정 늦추기’ |
+| 🗺️ 동선 · 구글맵 | 지도에 번호 마커/경로선, 장소별 구글맵 링크, 하루 동선을 **구글맵 길찾기**로 열기 |
+| 💰 비용 · 정산 | 일정별 비용 + 별도 지출, 분류별/일자별 합계, 예산 사용률, **결제자 지정 → 1/N 정산 (누가 누구에게 얼마)** |
+| 💱 환율 | 외화 여행이면 원화 환산 · 계산기 (ExchangeRate-API) |
+| ☀️ 날씨 | Day별 그날 첫 장소 기준 예보 (Open-Meteo, 16일 이내) |
+| 🎒 준비물 | 함께 체크하는 준비물 목록, 기본 준비물 템플릿 |
+| 📔 여행 기록 | 날짜별 기분 · 일기, 다녀온 곳 표시 |
+
+## 구성
+
+- 프론트엔드: React + Vite (TypeScript) — Vercel 배포
+- 백엔드: Supabase (Auth, Postgres + RLS, Realtime) — 스키마는 `supabase/schema.sql`
+- 지도: Google Maps JavaScript API (키 없으면 OpenStreetMap)
 
 ## 실행
 
 ```bash
+cp .env.example .env.local   # Supabase URL / 공개 키 입력
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # dist/ 에 정적 파일 생성 (Vercel, Netlify, GitHub Pages 등에 배포 가능)
+npm run dev
 ```
 
-## Google 지도 연동
+## 운영 메모
 
-API 키 없이도 동작합니다 (OpenStreetMap 지도 + Nominatim 장소 검색 + 추정 이동시간, ‘구글맵 경로’ 링크는 그대로 작동).
-
-Google 지도를 앱 안에 띄우려면:
-
-1. [Google Cloud 콘솔](https://console.cloud.google.com/google/maps-apis)에서 **Maps JavaScript API**, **Places API (New)**, **Directions API**를 사용 설정
-2. API 키를 만들고 HTTP 리퍼러를 배포 도메인으로 제한
-3. 앱 우측 상단 **⚙️ 구글맵 연동**에 키 입력 — 또는 `.env`에 `VITE_GOOGLE_MAPS_API_KEY=...` 설정 후 빌드
-
-> 참고: 한국 내 **도보·자동차** 길찾기는 Google이 제공하지 않아 직선거리 기반 추정치(점선)로 표시됩니다. 대중교통 경로와 해외 여행지는 Google 실제 경로(실선)로 표시됩니다.
-
-## 구조
-
-```
-src/
-  App.tsx              앱 셸, 여행 목록 ↔ 상세 전환, 설정
-  types.ts / utils.ts  데이터 모델, 시간·거리·비용 계산, 구글맵 URL 생성
-  google.ts            Google Maps 로더, 장소 검색, 경로 조회(캐시)
-  storage.ts           localStorage 저장
-  sample.ts            제주 2박 3일 샘플 데이터
-  components/          TripList, TripView, Timeline, MapView, CostView, StopForm, PlaceSearch …
-```
-
-데이터는 브라우저 localStorage에 저장됩니다.
+- `ceo.maplnd@gmail.com`으로 가입한 계정이 자동으로 **관리자 + 승인** 상태가 됩니다 (`handle_new_user` 트리거).
+- Supabase 기본 메일 발송은 제한이 있으므로 **Authentication → Sign In / Providers → Email → “Confirm email” 끄기**를 권장합니다. (관리자 승인이 실제 접근 통제 역할을 합니다)
+- 권한은 모두 DB의 RLS로 강제됩니다: 승인 대기/거절 사용자는 어떤 여행도 읽거나 쓸 수 없고, 보기 전용 멤버는 수정할 수 없으며, 여행 삭제는 소유자만 가능합니다.
+- 한국 내 도보·자동차 길찾기는 Google이 제공하지 않아 추정치(점선)로 표시됩니다.

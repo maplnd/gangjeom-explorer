@@ -1,6 +1,6 @@
 import { MODES, type Leg, type Place, type Stop, type TravelMode, type Trip } from './types'
 
-export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)
+export const uid = () => crypto.randomUUID()
 
 export function daysBetween(start: string, end: string): string[] {
   const out: string[] = []

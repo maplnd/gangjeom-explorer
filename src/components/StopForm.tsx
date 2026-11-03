@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CATEGORIES, MODES, type Category, type Stop, type TravelMode } from '../types'
+import { CATEGORIES, MODES, type Category, type Member, type Stop, type TravelMode } from '../types'
 import { fmtDate, fromMin, toMin, uid } from '../utils'
 import { Modal } from './Modal'
 import { PlaceSearch } from './PlaceSearch'
@@ -10,11 +10,13 @@ interface Props {
   defaultDate: string
   defaultStart?: string
   currency: string
+  members: Member[]
+  meId: string
   onSave: (s: Stop) => void
   onClose: () => void
 }
 
-export function StopForm({ stop, days, defaultDate, defaultStart = '09:00', currency, onSave, onClose }: Props) {
+export function StopForm({ stop, days, defaultDate, defaultStart = '09:00', currency, members, meId, onSave, onClose }: Props) {
   const [title, setTitle] = useState(stop?.title ?? '')
   const [date, setDate] = useState(stop?.date ?? defaultDate)
   const [start, setStart] = useState(stop?.start ?? defaultStart)
@@ -24,6 +26,7 @@ export function StopForm({ stop, days, defaultDate, defaultStart = '09:00', curr
   const [memo, setMemo] = useState(stop?.memo ?? '')
   const [mode, setMode] = useState<TravelMode>(stop?.modeToNext ?? 'TRANSIT')
   const [place, setPlace] = useState(stop?.place)
+  const [paidBy, setPaidBy] = useState<string>(stop ? stop.paidBy ?? '' : meId)
 
   const name = title.trim() || place?.name || ''
   const timeOk = toMin(end) >= toMin(start)
@@ -43,6 +46,7 @@ export function StopForm({ stop, days, defaultDate, defaultStart = '09:00', curr
       memo,
       modeToNext: mode,
       place,
+      paidBy: paidBy || null,
     })
 
   const dayOptions = days.includes(date) ? days : [date, ...days]
@@ -115,6 +119,15 @@ export function StopForm({ stop, days, defaultDate, defaultStart = '09:00', curr
           </select>
         </label>
       </div>
+      {members.length > 1 && Number(cost) > 0 && (
+        <label className="field">
+          <span>결제한 사람 (정산용)</span>
+          <select value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
+            {members.map((m) => <option key={m.user_id} value={m.user_id}>{m.profile?.display_name || m.profile?.email}</option>)}
+            <option value="">미지정</option>
+          </select>
+        </label>
+      )}
       <label className="field">
         <span>메모 · 기록</span>
         <textarea rows={3} value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="예약 번호, 느낀 점, 팁 등" />

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { googleRoute, type GoogleRoute, type GoogleStatus } from '../google'
-import { MODES, type Leg, type Place, type Stop, type TravelMode, type Trip } from '../types'
+import { MODES, ROLES, type Leg, type Member, type Place, type Stop, type TravelMode, type Trip } from '../types'
 import {
   DAY_COLORS, daysBetween, estimateLeg, fmtDate, fmtDistance, fmtDuration, fmtMoney, fromMin,
   googleDirectionsUrl, legKey, sortStops, toMin, tripTotals,
 } from '../utils'
+import { Checklist } from './Checklist'
 import { CostView } from './CostView'
+import { useWeather, weatherLabel } from '../weather'
+import { Journal } from './Journal'
 import { MapView, type MapPoint, type MapSegment } from './MapView'
 import { StopForm } from './StopForm'
 import { Timeline } from './Timeline'
@@ -16,16 +19,24 @@ const hasPlace = (s: Stop): s is Placed => !!s.place
 
 interface Props {
   trip: Trip
+  meId: string
+  members: Member[]
+  online: string[]
+  onShare: () => void
   google: GoogleStatus
   onChange: (t: Trip) => void
   onBack: () => void
   onDelete: () => void
 }
 
-export function TripView({ trip, google, onChange, onBack, onDelete }: Props) {
+type Tab = 'plan' | 'cost' | 'check' | 'journal'
+
+export function TripView({ trip, meId, members, online, onShare, google, onChange, onBack, onDelete }: Props) {
+  const canEdit = trip.role === 'owner' || trip.role === 'editor'
   const days = useMemo(() => daysBetween(trip.startDate, trip.endDate), [trip.startDate, trip.endDate])
   const [day, setDay] = useState<string>('all')
-  const [tab, setTab] = useState<'plan' | 'cost'>('plan')
+  const [tab, setTab] = useState<Tab>(() => (sessionStorage.getItem('trip-tab') as Tab) || 'plan')
+  useEffect(() => sessionStorage.setItem('trip-tab', tab), [tab])
   const [selectedId, setSelectedId] = useState<string>()
   const [editing, setEditing] = useState<Stop | 'new' | null>(null)
   const [editTrip, setEditTrip] = useState(false)
@@ -123,6 +134,15 @@ export function TripView({ trip, google, onChange, onBack, onDelete }: Props) {
     return { date, start: last ? fromMin(Math.min(toMin(last.end) + 30, 1380)) : '09:00' }
   }
 
+  const weatherLocs = useMemo(() => {
+    const fallback = trip.stops.find((s) => s.place)?.place
+    return Object.fromEntries(allDates.map((d) => {
+      const p = (byDay[d] ?? []).find((s) => s.place)?.place ?? fallback
+      return [d, p ? { lat: p.lat, lng: p.lng } : undefined]
+    }))
+  }, [allDates, byDay, trip.stops])
+  const weather = useWeather(weatherLocs)
+
   const totals = tripTotals(trip)
   const onSelect = useCallback((id: string) => setSelectedId(id), [])
 
@@ -133,24 +153,46 @@ export function TripView({ trip, google, onChange, onBack, onDelete }: Props) {
         <div className="trip-title">
           <h1>{trip.title}</h1>
           <div className="muted">
+            {trip.destination && <>📍 {trip.destination} · </>}
             {fmtDate(trip.startDate)} – {fmtDate(trip.endDate)} · {days.length - 1}박 {days.length}일 · 일정 {trip.stops.length}개 · 지출{' '}
             <b>{fmtMoney(totals.total, trip.currency)}</b>
             {trip.budget > 0 && <> / 예산 {fmtMoney(trip.budget, trip.currency)}</>}
           </div>
+          <div className="people">
+            {members.map((m) => {
+              const name = m.profile?.display_name || m.profile?.email || '?'
+              const on = online.includes(m.user_id)
+              return (
+                <span key={m.user_id} className={`avatar ${on ? 'online' : ''}`} title={`${name} · ${ROLES[m.role]}${on ? ' · 지금 보는 중' : ''}`}>
+                  {name.slice(0, 1)}
+                </span>
+              )
+            })}
+            {!canEdit && <span className="badge">보기 전용</span>}
+          </div>
         </div>
         <div className="head-actions">
-          <button className="btn ghost sm" onClick={() => setEditTrip(true)}>여행 정보</button>
-          <button className="btn ghost sm danger" onClick={() => confirm(`'${trip.title}' 여행을 삭제할까요?`) && onDelete()}>삭제</button>
+          <button className="btn primary sm" onClick={onShare}>👥 공유</button>
+          {canEdit && <button className="btn ghost sm" onClick={() => setEditTrip(true)}>여행 정보</button>}
+          {trip.role === 'owner' && (
+            <button className="btn ghost sm danger" onClick={() => confirm(`'${trip.title}' 여행을 삭제할까요? 모든 멤버에게서 삭제됩니다.`) && onDelete()}>삭제</button>
+          )}
         </div>
       </div>
 
       <div className="tabs">
-        <button className={tab === 'plan' ? 'on' : ''} onClick={() => setTab('plan')}>🗓️ 일정 · 동선</button>
-        <button className={tab === 'cost' ? 'on' : ''} onClick={() => setTab('cost')}>💰 비용</button>
+        <button className={tab === 'plan' ? 'on' : ''} onClick={() => setTab('plan')}>🗓️ 일정·동선</button>
+        <button className={tab === 'cost' ? 'on' : ''} onClick={() => setTab('cost')}>💰 비용·정산</button>
+        <button className={tab === 'check' ? 'on' : ''} onClick={() => setTab('check')}>🎒 준비물</button>
+        <button className={tab === 'journal' ? 'on' : ''} onClick={() => setTab('journal')}>📔 기록</button>
       </div>
 
       {tab === 'cost' ? (
-        <CostView trip={trip} onChange={onChange} />
+        <CostView trip={trip} members={members} meId={meId} canEdit={canEdit} onChange={onChange} />
+      ) : tab === 'check' ? (
+        <Checklist trip={trip} canEdit={canEdit} onChange={onChange} />
+      ) : tab === 'journal' ? (
+        <Journal trip={trip} canEdit={canEdit} onChange={onChange} />
       ) : (
         <>
           <div className="day-bar">
@@ -167,7 +209,7 @@ export function TripView({ trip, google, onChange, onBack, onDelete }: Props) {
               </button>
             ))}
           </div>
-            <button className="btn primary sm" onClick={() => setEditing('new')}>+ 일정 추가</button>
+            {canEdit && <button className="btn primary sm" onClick={() => setEditing('new')}>+ 일정 추가</button>}
           </div>
 
           <div className="plan">
@@ -182,6 +224,15 @@ export function TripView({ trip, google, onChange, onBack, onDelete }: Props) {
                           <span className="day-dot" style={{ background: dayColor(d) }} />
                           {days.includes(d) ? `Day ${days.indexOf(d) + 1}` : '기간 외'} · {fmtDate(d)}
                         </h3>
+                        {weather[d] && (() => {
+                          const w = weather[d]
+                          const [icon, label] = weatherLabel(w.code)
+                          return (
+                            <div className="weather" title={`${label} · 강수확률 ${w.rain ?? '-'}%`}>
+                              {icon} {label} {Math.round(w.min)}° / {Math.round(w.max)}°{w.rain != null && w.rain >= 30 && <> · ☔ {w.rain}%</>}
+                            </div>
+                          )
+                        })()}
                         <div className="muted small">
                           일정 {sum.count}개 · 이동 {fmtDistance(sum.dist)} / 약 {fmtDuration(sum.dur)} · 비용 {fmtMoney(sum.cost, trip.currency)}
                         </div>
@@ -203,6 +254,7 @@ export function TripView({ trip, google, onChange, onBack, onDelete }: Props) {
                       onEdit={(s) => setEditing(s)}
                       onDelete={(s) => onChange({ ...trip, stops: trip.stops.filter((x) => x.id !== s.id) })}
                       onToggleDone={(s) => updateStop({ ...s, done: !s.done })}
+                      canEdit={canEdit}
                       onShiftNext={(next, start) => {
                         const len = toMin(next.end) - toMin(next.start)
                         const st = Math.min(Math.ceil(start / 5) * 5, 1439)
@@ -230,6 +282,8 @@ export function TripView({ trip, google, onChange, onBack, onDelete }: Props) {
           defaultDate={newDefaults().date}
           defaultStart={newDefaults().start}
           currency={trip.currency}
+          members={members}
+          meId={meId}
           onClose={() => setEditing(null)}
           onSave={(s) => {
             updateStop(s)

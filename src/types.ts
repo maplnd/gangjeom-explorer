@@ -21,6 +21,7 @@ export interface Stop {
   memo: string
   modeToNext: TravelMode
   done?: boolean
+  paidBy?: string | null
 }
 
 export interface Expense {
@@ -29,18 +30,58 @@ export interface Expense {
   label: string
   category: Category
   amount: number
+  paidBy?: string | null
+}
+
+export interface ChecklistItem {
+  id: string
+  text: string
+  category: string
+  done: boolean
+  sort: number
+}
+
+export interface DayNote {
+  id: string
+  date: string
+  mood: string
+  body: string
 }
 
 export interface Trip {
   id: string
   title: string
+  destination?: string
   startDate: string
   endDate: string
   budget: number
   currency: string
   stops: Stop[]
   expenses: Expense[]
+  checklist: ChecklistItem[]
+  notes: DayNote[]
   createdAt: number
+  role?: Role
+  ownerId?: string
+  memberIds?: string[]
+}
+
+export type Role = 'owner' | 'editor' | 'viewer'
+export const ROLES: Record<Role, string> = { owner: '소유자', editor: '편집자', viewer: '보기 전용' }
+
+export interface Profile {
+  id: string
+  email: string
+  display_name: string
+  status: 'pending' | 'approved' | 'rejected'
+  is_admin: boolean
+  created_at: string
+}
+
+export interface Member {
+  user_id: string
+  role: Role
+  profile?: Pick<Profile, 'id' | 'email' | 'display_name'>
 }
 
 export interface Leg {
