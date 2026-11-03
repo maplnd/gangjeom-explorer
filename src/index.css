@@ -298,3 +298,45 @@ html, body { overflow-x: clip; max-width: 100%; }
 .wday .wt { white-space: nowrap; }
 .wday .wr { color: var(--muted); font-size: .74rem; white-space: nowrap; }
 .map-wait { background: var(--line); }
+
+/* ---------- 꾹 눌러 옮기기 ---------- */
+.stop.draggable { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.stop.lifting { opacity: .35; border-style: dashed; }
+body.dragging-stop { cursor: grabbing; -webkit-user-select: none; user-select: none; }
+.drop-line { height: 0; border-top: 3px solid var(--primary-2); margin: 4px 0; border-radius: 3px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-2) 25%, transparent); list-style: none; }
+.day-section.drop-on .day-head { background: color-mix(in srgb, var(--primary-2) 8%, transparent); }
+.empty.drop-here { border-color: var(--primary-2); color: var(--primary-2); }
+.drag-ghost { position: fixed; z-index: 3000; transform: translate(-50%, -130%); pointer-events: none; background: var(--primary); color: #fff; padding: 8px 14px; border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25); font-weight: 600; font-size: .9rem; display: grid; gap: 2px; max-width: 80vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drag-ghost small { font-weight: 400; opacity: .85; }
+
+/* ---------- 보기 전환 ---------- */
+.view-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 0 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--card); }
+.seg button { border: 0; background: none; padding: 6px 12px; cursor: pointer; font-size: .85rem; color: var(--muted); }
+.seg button.on { background: var(--primary); color: #fff; }
+
+/* ---------- 동선 요약 ---------- */
+.route-summary { display: grid; gap: 10px; }
+.rs-day { border-left: 5px solid; padding: 12px; display: grid; gap: 8px; }
+.rs-day header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rs-title { background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: .95rem; }
+.rs-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; }
+.rs-item { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
+.rs-stop { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 3px 10px 3px 3px; cursor: pointer; min-width: 0; max-width: 100%; }
+.rs-stop.sel { border-color: var(--primary-2); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-2) 25%, transparent); }
+.rs-stop.done { opacity: .6; }
+.rs-num { width: 22px; height: 22px; border-radius: 50%; color: #fff; font-size: .72rem; font-weight: 700; display: grid; place-items: center; flex-shrink: 0; }
+.rs-time { font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rs-name { font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.rs-leg { font-size: .74rem; color: var(--muted); white-space: nowrap; }
+
+/* ---------- 지도 고정 ---------- */
+.map-holder { position: relative; }
+.pin-btn { position: absolute; top: 10px; right: 10px; z-index: 600; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 6px 10px; font-size: .8rem; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+@media (min-width: 901px) { .pin-btn { display: none; } }
+@media (max-width: 900px) {
+  .plan-map.pinned { position: sticky; top: 50px; z-index: 700; background: var(--bg); padding: 4px 0 6px; }
+  .plan-map.pinned .map, .plan-map.pinned .map-wrap { height: 34vh; min-height: 200px; }
+  .plan-map.pinned .map-note { display: none; }
+}

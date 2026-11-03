@@ -14,6 +14,10 @@ interface Props {
   onToggleDone: (s: Stop) => void
   onShiftNext: (next: Stop, newStart: number) => void
   canEdit: boolean
+  date?: string
+  dragId?: string
+  dropBefore?: string | null | false // false = 이 날이 대상 아님, null = 맨 끝
+  bindDrag?: (id: string, title: string) => Record<string, unknown>
 }
 
 const URL_RE = /(https?:\/\/[^\s]+)/g
@@ -23,8 +27,8 @@ function linkify(text: string) {
   )
 }
 
-export function Timeline({ stops, labels, color, legFor, currency, selectedId, onSelect, onEdit, onDelete, onToggleDone, onShiftNext, canEdit }: Props) {
-  if (!stops.length) return <p className="empty">이 날은 아직 일정이 없어요.</p>
+export function Timeline({ stops, labels, color, legFor, currency, selectedId, onSelect, onEdit, onDelete, onToggleDone, onShiftNext, canEdit, date, dragId, dropBefore = false, bindDrag }: Props) {
+  if (!stops.length) return <p className={`empty ${dropBefore !== false ? 'drop-here' : ''}`}>{dropBefore !== false ? '여기에 놓기' : '이 날은 아직 일정이 없어요.'}</p>
   return (
     <ol className="timeline">
       {stops.map((s, i) => {
@@ -35,10 +39,12 @@ export function Timeline({ stops, labels, color, legFor, currency, selectedId, o
         const short = leg && gap < need
         const cat = CATEGORIES[s.category]
         return (
-          <li key={s.id}>
+          <li key={s.id} data-stop-id={s.id} data-date={date ?? s.date} data-next-id={next?.id ?? ''}>
+            {dropBefore === s.id && <div className="drop-line" />}
             <div
-              className={`stop ${selectedId === s.id ? 'sel' : ''} ${s.done ? 'done' : ''}`}
+              className={`stop ${selectedId === s.id ? 'sel' : ''} ${s.done ? 'done' : ''} ${dragId === s.id ? 'lifting' : ''} ${canEdit ? 'draggable' : ''}`}
               onClick={() => onSelect(s.id)}
+              {...(canEdit && bindDrag ? bindDrag(s.id, s.title) : {})}
             >
               <div className="stop-time">
                 <b>{s.start}</b>
@@ -96,6 +102,7 @@ export function Timeline({ stops, labels, color, legFor, currency, selectedId, o
           </li>
         )
       })}
+      {dropBefore === null && <li className="drop-line end" />}
     </ol>
   )
 }

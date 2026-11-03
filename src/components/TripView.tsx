@@ -9,6 +9,8 @@ import { Checklist } from './Checklist'
 import { CostView } from './CostView'
 import { geocode, useWeather } from '../weather'
 import { WeatherBar } from './WeatherBar'
+import { useStopDrag, type DropTarget } from './useStopDrag'
+import { RouteSummary } from './RouteSummary'
 import { Journal } from './Journal'
 import { MapView, type MapPoint, type MapSegment } from './MapView'
 import { StopForm } from './StopForm'
@@ -42,6 +44,9 @@ export function TripView({ trip, meId, members, online, onShare, google, onChang
   const [editing, setEditing] = useState<Stop | 'new' | null>(null)
   const [editTrip, setEditTrip] = useState(false)
   const [routes, setRoutes] = useState<Record<string, GoogleRoute | null>>({})
+  const [viewMode, setViewMode] = useState<'detail' | 'route'>(() => (localStorage.getItem('travel-ok:view') as 'route') || 'detail')
+  const [pinned, setPinned] = useState(() => localStorage.getItem('travel-ok:map-pin') === '1')
+  useEffect(() => { try { localStorage.setItem('travel-ok:view', viewMode); localStorage.setItem('travel-ok:map-pin', pinned ? '1' : '0') } catch { /* noop */ } }, [viewMode, pinned])
 
   const byDay = useMemo(() => {
     const m: Record<string, Stop[]> = {}
@@ -147,7 +152,41 @@ export function TripView({ trip, meId, members, online, onShare, google, onChang
   const weather = useWeather(weatherLocs)
 
   const totals = tripTotals(trip)
-  const onSelect = useCallback((id: string) => setSelectedId(id), [])
+
+  /** 꾹 눌러 옮긴 일정: 앞 일정 종료 + 이동시간 뒤에 시작(소요시간 유지), 뒤 일정과 겹치면 뒤 일정들을 밀어냄 */
+  const moveStop = (id: string, t: DropTarget) => {
+    const s = trip.stops.find((x) => x.id === id)
+    if (!s) return
+    if (t.beforeId === id) return
+    const list = (byDay[t.date] ?? []).filter((x) => x.id !== id)
+    let idx = t.beforeId ? list.findIndex((x) => x.id === t.beforeId) : list.length
+    if (idx < 0) idx = list.length
+    const orig = byDay[s.date] ?? []
+    const origIdx = orig.findIndex((x) => x.id === id)
+    if (t.date === s.date && (orig[origIdx + 1]?.id ?? null) === t.beforeId) return // 제자리
+    const prev = list[idx - 1]
+    const next = list[idx]
+    const dur = Math.max(0, toMin(s.end) - toMin(s.start))
+    const travel = prev?.place && s.place ? Math.ceil(legBetween(prev.place, s.place, prev.modeToNext).durationS / 60) : 0
+    let st = prev ? toMin(prev.end) + travel : next ? toMin(next.start) - dur : toMin(s.start)
+    st = Math.max(0, Math.min(Math.ceil(st / 5) * 5, 1439 - dur))
+    const moved: Stop = { ...s, date: t.date, start: fromMin(st), end: fromMin(st + dur) }
+    // 뒤 일정과 겹치면 순서대로 밀기
+    const changed = new Map<string, Stop>([[id, moved]])
+    let cursor = st + dur
+    for (const n of list.slice(idx)) {
+      const ns = toMin(n.start)
+      if (ns >= cursor) break
+      const nd = Math.max(0, toMin(n.end) - ns)
+      const newStart = Math.min(cursor, 1439 - nd)
+      changed.set(n.id, { ...n, start: fromMin(newStart), end: fromMin(newStart + nd) })
+      cursor = newStart + nd
+    }
+    onChange({ ...trip, stops: trip.stops.map((x) => changed.get(x.id) ?? x) })
+    setSelectedId(id)
+  }
+  const { drag, target, bind, clickAllowed } = useStopDrag(canEdit && viewMode === 'detail', moveStop)
+  const onSelect = useCallback((id: string) => { if (clickAllowed()) setSelectedId(id) }, [clickAllowed])
 
   return (
     <div className="trip-view">
@@ -214,15 +253,36 @@ export function TripView({ trip, meId, members, online, onShare, google, onChang
           </div>
             {canEdit && <button className="btn primary sm" onClick={() => setEditing('new')}>+ 일정 추가</button>}
           </div>
+          <div className="view-bar">
+            <div className="seg">
+              <button className={viewMode === 'detail' ? 'on' : ''} onClick={() => setViewMode('detail')}>📋 상세 일정</button>
+              <button className={viewMode === 'route' ? 'on' : ''} onClick={() => setViewMode('route')}>🧭 동선 요약</button>
+            </div>
+            {canEdit && viewMode === 'detail' && <span className="muted small">카드를 꾹 눌러 옮길 수 있어요</span>}
+          </div>
 
           <WeatherBar dates={allDates} days={days} weather={weather} selected={day} color={dayColor} onPick={setDay} />
 
           <div className="plan">
             <div className="plan-list">
-              {visibleDates.map((d) => {
+              {viewMode === 'route' ? (
+                <RouteSummary
+                  dates={visibleDates}
+                  days={days}
+                  byDay={byDay}
+                  labels={labels}
+                  color={dayColor}
+                  legFor={legFor}
+                  summary={daySummary}
+                  currency={trip.currency}
+                  selectedId={selectedId}
+                  onSelect={onSelect}
+                  onPickDay={setDay}
+                />
+              ) : visibleDates.map((d) => {
                 const sum = daySummary(d)
                 return (
-                  <section key={d} className="day-section">
+                  <section key={d} className={`day-section ${drag && target?.date === d ? 'drop-on' : ''}`} data-day={d}>
                     <header className="day-head" style={{ borderColor: dayColor(d) }}>
                       <div>
                         <h3>
@@ -251,6 +311,10 @@ export function TripView({ trip, meId, members, online, onShare, google, onChang
                       onDelete={(s) => onChange({ ...trip, stops: trip.stops.filter((x) => x.id !== s.id) })}
                       onToggleDone={(s) => updateStop({ ...s, done: !s.done })}
                       canEdit={canEdit}
+                      date={d}
+                      dragId={drag?.id}
+                      dropBefore={drag && target?.date === d ? target.beforeId : false}
+                      bindDrag={bind}
                       onShiftNext={(next, start) => {
                         const len = toMin(next.end) - toMin(next.start)
                         const st = Math.min(Math.ceil(start / 5) * 5, 1439)
@@ -261,14 +325,26 @@ export function TripView({ trip, meId, members, online, onShare, google, onChang
                 )
               })}
             </div>
-            <div className="plan-map">
-              <MapView points={points} segments={segments} selectedId={selectedId} onSelect={onSelect} google={google} />
+            <div className={`plan-map ${pinned ? 'pinned' : ''}`}>
+              <div className="map-holder">
+                <MapView points={points} segments={segments} selectedId={selectedId} onSelect={onSelect} google={google} />
+                <button className="pin-btn" onClick={() => setPinned((p) => !p)} title="스크롤해도 지도가 보이도록 고정">
+                  {pinned ? '📌 고정 해제' : '📌 지도 고정'}
+                </button>
+              </div>
               <p className="muted small map-note">
                 실선 = Google 실제 경로, 점선 = 직선(추정). 한국 내 도보·자동차 길찾기는 Google에서 제공되지 않아 추정치로 표시됩니다.
               </p>
             </div>
           </div>
         </>
+      )}
+
+      {drag && (
+        <div className="drag-ghost" style={{ left: drag.x, top: drag.y }}>
+          ↕ {drag.title}
+          <small>{target ? `${days.includes(target.date) ? `Day ${days.indexOf(target.date) + 1}` : fmtDate(target.date)}로 이동` : '놓을 위치로 이동'}</small>
+        </div>
       )}
 
       {editing && (
