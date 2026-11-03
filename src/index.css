@@ -340,3 +340,34 @@ body.dragging-stop { cursor: grabbing; -webkit-user-select: none; user-select: n
   .plan-map.pinned .map, .plan-map.pinned .map-wrap { height: 34vh; min-height: 200px; }
   .plan-map.pinned .map-note { display: none; }
 }
+
+/* ---------- 지출 내역 (카드형) ---------- */
+.sec-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.sec-head h3 { margin: 0; display: flex; gap: 6px; align-items: center; }
+.weights { display: grid; gap: 6px; padding: 10px; margin-bottom: 10px; border: 1px dashed var(--line); border-radius: 10px; }
+.weight-row { display: flex; align-items: center; gap: 6px; }
+.weight-row input { width: 64px; text-align: center; padding: 6px; }
+.weight-row .pct { width: 40px; text-align: right; }
+.exp-form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 6px; margin-bottom: 6px; }
+@media (max-width: 700px) {
+  .exp-form { grid-template-columns: 1fr 1fr; }
+  .exp-form .exp-f-label { grid-column: span 2; }
+  .exp-form .btn { grid-column: span 2; justify-content: center; }
+}
+.exp-day { margin-top: 12px; }
+.exp-day-head { display: flex; align-items: baseline; gap: 6px; padding: 6px 2px; border-bottom: 2px solid var(--line); font-size: .9rem; }
+.exp-day-sum { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.exp-item { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--line); align-items: start; }
+.exp-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 1.1rem; }
+.exp-body { min-width: 0; display: grid; gap: 5px; }
+.exp-top { display: flex; gap: 10px; align-items: baseline; }
+.exp-label { flex: 1; min-width: 0; font-weight: 600; font-size: .92rem; line-height: 1.35; }
+.exp-amt { flex-shrink: 0; white-space: nowrap; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: normal; word-break: keep-all; }
+.exp-meta { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: .78rem; color: var(--muted); }
+.exp-meta .tag { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.exp-meta select.mini { font-size: .78rem; padding: 3px 6px; }
+.chip-btn { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 3px 9px; font-size: .78rem; cursor: pointer; }
+.exp-total { display: flex; justify-content: space-between; padding: 12px 2px 0; font-size: 1rem; }
+.exp-total b { white-space: nowrap; }
+.split-quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.stat b, .settle-person, .transfers .cost, .bar-val { overflow-wrap: normal; word-break: keep-all; }

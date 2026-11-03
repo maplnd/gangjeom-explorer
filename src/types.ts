@@ -22,6 +22,7 @@ export interface Stop {
   modeToNext: TravelMode
   done?: boolean
   paidBy?: string | null
+  splitWith?: string[] | null
 }
 
 export interface Expense {
@@ -31,6 +32,7 @@ export interface Expense {
   category: Category
   amount: number
   paidBy?: string | null
+  splitWith?: string[] | null
 }
 
 export interface ChecklistItem {
@@ -62,6 +64,7 @@ export interface Trip {
   notes: DayNote[]
   createdAt: number
   role?: Role
+  splitWeights?: Record<string, number>
   ownerId?: string
   memberIds?: string[]
 }
