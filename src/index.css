@@ -297,3 +297,4 @@ html, body { overflow-x: clip; max-width: 100%; }
 .wday .wi { font-size: 1.5rem; line-height: 1.2; }
 .wday .wt { white-space: nowrap; }
 .wday .wr { color: var(--muted); font-size: .74rem; white-space: nowrap; }
+.map-wait { background: var(--line); }

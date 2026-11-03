@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Place, Stop } from '../types'
 import { CATEGORIES } from '../types'
-import type { GoogleStatus } from '../google'
+import { consumeQuota, type GoogleStatus } from '../google'
 
 export interface MapPoint {
   stop: Stop & { place: Place }
@@ -23,12 +23,22 @@ interface Props {
   selectedId?: string
   onSelect: (id: string) => void
   google: GoogleStatus
+  quotaOut?: boolean
 }
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 } // 서울
 
 export function MapView(props: Props) {
-  return props.google === 'ready' ? <GoogleMapView {...props} /> : <LeafletMapView {...props} />
+  // 구글 지도는 띄울 때마다 과금되므로, 서버의 하루 상한 안에서만 사용
+  const [allowed, setAllowed] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (props.google !== 'ready') return
+    let alive = true
+    consumeQuota('map').then((ok) => alive && setAllowed(ok))
+    return () => { alive = false }
+  }, [props.google])
+  if (props.google === 'ready' && allowed === null) return <div className="map map-wait" />
+  return props.google === 'ready' && allowed ? <GoogleMapView {...props} /> : <LeafletMapView {...props} quotaOut={props.google === 'ready' && allowed === false} />
 }
 
 const popupHtml = (p: MapPoint) => {
@@ -139,7 +149,7 @@ function GoogleMapView({ points, segments, selectedId, onSelect }: Props) {
 
 /* ---------------- Leaflet (API 키 없을 때) ---------------- */
 
-function LeafletMapView({ points, segments, selectedId, onSelect, google }: Props) {
+function LeafletMapView({ points, segments, selectedId, onSelect, google, quotaOut }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
@@ -207,7 +217,7 @@ function LeafletMapView({ points, segments, selectedId, onSelect, google }: Prop
     <div className="map-wrap">
       <div ref={el} className="map" />
       <div className="map-badge">
-        {google === 'error' ? '⚠️ Google 지도 로드 실패 → OpenStreetMap 표시 중' : google === 'loading' ? 'Google 지도 불러오는 중…' : 'OpenStreetMap · 설정에서 Google 지도 연동'}
+        {quotaOut ? '오늘 Google 지도 사용량 한도 도달 → 무료 지도 표시 중' : google === 'error' ? '⚠️ Google 지도 로드 실패 → OpenStreetMap 표시 중' : google === 'loading' ? 'Google 지도 불러오는 중…' : 'OpenStreetMap · 설정에서 Google 지도 연동'}
       </div>
     </div>
   )

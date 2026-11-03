@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { supabase } from './supabase'
 import type { Leg, Place, TravelMode } from './types'
 import { legKey } from './utils'
 
@@ -56,6 +57,16 @@ export function useGoogleMaps(key: string): GoogleStatus {
 
 export const isGoogleReady = () => status === 'ready'
 
+/** 하루 사용량 상한 (서버에서 집계: 지도 300회, 장소검색 100회, 경로 300회). 넘으면 무료 대체 수단 사용 */
+export async function consumeQuota(kind: 'map' | 'places' | 'routes'): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc('use_quota', { p_kind: kind })
+    return !error && data === true
+  } catch {
+    return false
+  }
+}
+
 /* ---------- 장소 검색 ---------- */
 
 export async function searchPlacesGoogle(query: string): Promise<Place[]> {
@@ -92,7 +103,8 @@ export async function searchPlacesOSM(query: string): Promise<Place[]> {
 }
 
 export function searchPlaces(query: string): Promise<Place[]> {
-  return isGoogleReady() ? searchPlacesGoogle(query).catch(() => searchPlacesOSM(query)) : searchPlacesOSM(query)
+  if (!isGoogleReady()) return searchPlacesOSM(query)
+  return consumeQuota('places').then((ok) => (ok ? searchPlacesGoogle(query).catch(() => searchPlacesOSM(query)) : searchPlacesOSM(query)))
 }
 
 /* ---------- 경로 (Directions) ---------- */
@@ -109,6 +121,10 @@ export function googleRoute(a: Place, b: Place, mode: TravelMode): Promise<Googl
   if (cached) return cached
   const p = (async () => {
     try {
+      if (!(await consumeQuota('routes'))) {
+        routeCache.delete(key)
+        return null
+      }
       const { DirectionsService } = (await google.maps.importLibrary('routes')) as google.maps.RoutesLibrary
       const res = await new DirectionsService().route({
         origin: { lat: a.lat, lng: a.lng },
