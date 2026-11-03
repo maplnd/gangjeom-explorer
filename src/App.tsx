@@ -134,7 +134,7 @@ function Main({ profile, onLogout, onProfileChange }: { profile: Profile; onLogo
         <button className="brand" onClick={() => go({ name: 'list' })}>🧭 여행OK!</button>
         <div className="top-actions">
           <button className={`map-status ${google}`} onClick={() => setShowSettings(true)} title="Google 지도 연동 설정">
-            {google === 'ready' ? '● Google 지도' : google === 'error' ? '● 지도 오류' : google === 'loading' ? '● 연결 중' : '⚙️ 구글맵'}
+            {google === 'ready' ? '● 구글맵' : google === 'error' ? '● 지도 오류' : google === 'loading' ? '● 연결 중' : '⚙️ 구글맵'}
           </button>
           {profile.is_admin && (
             <button className="map-status" onClick={() => go({ name: 'admin' })}>

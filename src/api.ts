@@ -6,26 +6,26 @@ import { uid } from './utils'
 
 interface StopRow {
   id: string; trip_id: string; date: string; start_time: string; end_time: string; title: string
-  place: Stop['place'] | null; category: string; cost: number; memo: string; mode_to_next: string; done: boolean; paid_by: string | null
+  place: Stop['place'] | null; category: string; cost: number; memo: string; mode_to_next: string; done: boolean; paid_by: string | null; split_with?: string[] | null
 }
-interface ExpenseRow { id: string; trip_id: string; date: string; label: string; category: string; amount: number; paid_by: string | null }
+interface ExpenseRow { id: string; trip_id: string; date: string; label: string; category: string; amount: number; paid_by: string | null; split_with?: string[] | null }
 interface ChecklistRow extends ChecklistItem { trip_id: string }
 interface NoteRow extends DayNote { trip_id: string }
 interface TripRow {
-  id: string; owner_id: string; title: string; destination: string; start_date: string; end_date: string; budget: number; currency: string
+  id: string; owner_id: string; title: string; destination: string; start_date: string; end_date: string; budget: number; currency: string; split_weights?: Record<string, number>
   created_at: string; stops?: StopRow[]; expenses?: ExpenseRow[]; checklist_items?: ChecklistRow[]; day_notes?: NoteRow[]; trip_members?: { user_id: string; role: Role }[]
 }
 
 const toStop = (r: StopRow): Stop => ({
   id: r.id, date: r.date, start: r.start_time, end: r.end_time, title: r.title, place: r.place ?? undefined,
-  category: r.category as Category, cost: Number(r.cost) || 0, memo: r.memo ?? '', modeToNext: r.mode_to_next as TravelMode, done: r.done, paidBy: r.paid_by,
+  category: r.category as Category, cost: Number(r.cost) || 0, memo: r.memo ?? '', modeToNext: r.mode_to_next as TravelMode, done: r.done, paidBy: r.paid_by, splitWith: r.split_with ?? null,
 })
 const fromStop = (s: Stop, tripId: string): StopRow => ({
   id: s.id, trip_id: tripId, date: s.date, start_time: s.start, end_time: s.end, title: s.title, place: s.place ?? null,
-  category: s.category, cost: s.cost || 0, memo: s.memo || '', mode_to_next: s.modeToNext, done: !!s.done, paid_by: s.paidBy ?? null,
+  category: s.category, cost: s.cost || 0, memo: s.memo || '', mode_to_next: s.modeToNext, done: !!s.done, paid_by: s.paidBy ?? null, split_with: s.splitWith ?? null,
 })
-const toExpense = (r: ExpenseRow): Expense => ({ id: r.id, date: r.date, label: r.label, category: r.category as Category, amount: Number(r.amount) || 0, paidBy: r.paid_by })
-const fromExpense = (e: Expense, tripId: string): ExpenseRow => ({ id: e.id, trip_id: tripId, date: e.date, label: e.label, category: e.category, amount: e.amount || 0, paid_by: e.paidBy ?? null })
+const toExpense = (r: ExpenseRow): Expense => ({ id: r.id, date: r.date, label: r.label, category: r.category as Category, amount: Number(r.amount) || 0, paidBy: r.paid_by, splitWith: r.split_with ?? null })
+const fromExpense = (e: Expense, tripId: string): ExpenseRow => ({ id: e.id, trip_id: tripId, date: e.date, label: e.label, category: e.category, amount: e.amount || 0, paid_by: e.paidBy ?? null, split_with: e.splitWith ?? null })
 const fromItem = (c: ChecklistItem, tripId: string): ChecklistRow => ({ id: c.id, trip_id: tripId, text: c.text, category: c.category, done: c.done, sort: c.sort })
 const fromNote = (n: DayNote, tripId: string): NoteRow => ({ id: n.id, trip_id: tripId, date: n.date, mood: n.mood, body: n.body })
 
@@ -33,7 +33,7 @@ function toTrip(r: TripRow, me?: string): Trip {
   const members = r.trip_members ?? []
   return {
     id: r.id, title: r.title, destination: r.destination ?? '', startDate: r.start_date, endDate: r.end_date, budget: Number(r.budget) || 0, currency: r.currency,
-    createdAt: Date.parse(r.created_at), ownerId: r.owner_id,
+    createdAt: Date.parse(r.created_at), ownerId: r.owner_id, splitWeights: r.split_weights ?? {},
     stops: (r.stops ?? []).map(toStop), expenses: (r.expenses ?? []).map(toExpense),
     checklist: (r.checklist_items ?? []).map(({ id, text, category, done, sort }) => ({ id, text, category, done, sort }))
       .sort((a, b) => a.sort - b.sort || a.text.localeCompare(b.text)),
@@ -97,10 +97,11 @@ export async function syncTrip(prev: Trip, next: Trip) {
   const ops: PromiseLike<unknown>[] = []
   if (
     prev.title !== next.title || (prev.destination ?? '') !== (next.destination ?? '') || prev.startDate !== next.startDate || prev.endDate !== next.endDate ||
-    prev.budget !== next.budget || prev.currency !== next.currency
+    prev.budget !== next.budget || prev.currency !== next.currency ||
+    JSON.stringify(prev.splitWeights ?? {}) !== JSON.stringify(next.splitWeights ?? {})
   ) {
     ops.push(supabase.from('trips').update({
-      title: next.title, destination: next.destination ?? '', start_date: next.startDate, end_date: next.endDate, budget: next.budget || 0, currency: next.currency,
+      title: next.title, destination: next.destination ?? '', start_date: next.startDate, end_date: next.endDate, budget: next.budget || 0, currency: next.currency, split_weights: next.splitWeights ?? {},
     }).eq('id', next.id).then(check))
   }
   const diff = <T extends { id: string }>(a: T[], b: T[]) => {
