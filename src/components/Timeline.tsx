@@ -16,6 +16,13 @@ interface Props {
   canEdit: boolean
 }
 
+const URL_RE = /(https?:\/\/[^\s]+)/g
+function linkify(text: string) {
+  return text.split(URL_RE).map((part, i) =>
+    i % 2 ? <a key={i} href={part} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>{part}</a> : part,
+  )
+}
+
 export function Timeline({ stops, labels, color, legFor, currency, selectedId, onSelect, onEdit, onDelete, onToggleDone, onShiftNext, canEdit }: Props) {
   if (!stops.length) return <p className="empty">이 날은 아직 일정이 없어요.</p>
   return (
@@ -52,7 +59,7 @@ export function Timeline({ stops, labels, color, legFor, currency, selectedId, o
                 ) : (
                   <span className="muted small">위치 미지정 (지도·동선에서 제외)</span>
                 )}
-                {s.memo && <p className="memo">{s.memo}</p>}
+                {s.memo && <p className="memo">{linkify(s.memo)}</p>}
                 {canEdit ? (
                   <div className="stop-actions" onClick={(e) => e.stopPropagation()}>
                     <label className="check">

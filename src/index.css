@@ -259,3 +259,29 @@ select.mini { padding: 4px 6px; font-size: .82rem; width: auto; }
 .pw-row { display: flex; gap: 6px; }
 .pw-row input { flex: 1; }
 .remember { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: .88rem; }
+
+/* ---------- 모바일 넘침 방지 ---------- */
+html, body { overflow-x: clip; max-width: 100%; }
+.stop { grid-template-columns: 58px 30px minmax(0, 1fr); }
+.stop-time { align-content: start; gap: 2px; }
+.stop-body, .stop-title, .memo, .trip-title, .card, .modal-body, .journal-day, .place-chosen, .results, .day-head > div {
+  overflow-wrap: anywhere; word-break: break-word; min-width: 0;
+}
+.stop-title strong { min-width: 0; }
+.memo a { color: var(--primary-2); }
+.plan, .plan-list, .plan-map { min-width: 0; }
+@media (max-width: 600px) {
+  main { padding: 12px; }
+  .stop { grid-template-columns: 48px 26px minmax(0, 1fr); gap: 8px; padding: 10px 8px; }
+  .stop-time b { font-size: .92rem; }
+  .leg { padding-left: 70px; }
+  .leg::before { left: 68px; }
+  .day-head { flex-wrap: wrap; }
+  .trip-title h1 { font-size: 1.2rem; }
+}
+.trip-title { min-width: 220px; flex: 1 1 220px; }
+@media (max-width: 600px) {
+  .trip-head { gap: 8px; }
+  .trip-head .head-actions { margin-left: auto; }
+  .trip-title { order: 3; flex-basis: 100%; min-width: 0; }
+}
